@@ -1,0 +1,30 @@
+# Node.js and Bun
+node_modules/
+dist/
+bun.lockb
+
+# Build artifacts
+*.log
+*.tmp
+*.bak
+
+# IDE-specific files
+.vscode/
+.idea/
+*.code-workspace
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# Environment variables
+.env
+.env.local
+
+# TypeScript build artifacts
+*.js.map
+*.d.ts
+
+# Ignore build artifacts and dependencies in all packages
+packages/*/dist/
+packages/*/node_modules/
