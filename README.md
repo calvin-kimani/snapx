@@ -135,7 +135,7 @@ bun test
 6. Submit a Pull Request : Push your branch and open a pull request on GitHub.
 
 ## License
-Snapx is licensed under the MIT License. See the [License](#license) file for details.
+Snapx is licensed under the MIT License. See the [License](LICENSE) file for details.
 
 ## Acknowledgments
 * Built with ❤️ using [Bun](https://bun.sh/) .
