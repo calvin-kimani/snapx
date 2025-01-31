@@ -143,5 +143,5 @@ Snapx is licensed under the MIT License. See the [License](#license) file for de
 
 ## Contact
 For questions or feedback, feel free to reach out:
-* GitHub: @yourusername
+* GitHub: @calvin-kimani
 * Email: calvinkimani475@gmail.com
