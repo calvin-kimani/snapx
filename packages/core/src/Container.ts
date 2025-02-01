@@ -13,7 +13,7 @@ export class Container {
      * @param resolver - A factory function or an instance.
      */
     bind(key: string, resolver: Function | object | any): void {
-        this.bindings.set(key, resolver);
+        this.bindings.set(key, { resolver });
     }
 
     /**
