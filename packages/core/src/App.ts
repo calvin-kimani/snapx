@@ -6,7 +6,7 @@ import fs from 'fs';
 export class App {
     private basePath: string;
     container: Container;
-    providers: any[] = []; // Array of provider classes
+    providers: (typeof ServiceProvider)[] = []; // Array of provider classes
 
     /**
      * Constructor for the App class.
@@ -29,7 +29,7 @@ export class App {
 
         // Check if the file exists
         if (!fs.existsSync(absoluteProvidersPath)) {
-            throw new Error(`Providers file not found: ${absoluteProvidersPath}`);
+            throw new Error(`Providers file not found at: ${absoluteProvidersPath}. Ensure the file exists and is correctly configured.`);
         }
 
         try {
