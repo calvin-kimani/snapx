@@ -1,12 +1,13 @@
 import { Container } from './Container';
 import { ServiceProvider } from './ServiceProvider';
+import { ConfigServiceProvider } from './providers/ConfigServiceProvider';
 import path from 'path';
 import fs from 'fs';
 
 export class App {
     private basePath: string;
     container: Container;
-    providers: (typeof ServiceProvider)[] = []; // Array of provider classes
+    providers: (typeof ServiceProvider)[] = [ConfigServiceProvider]; // Array of provider classes
 
     /**
      * Constructor for the App class.
@@ -42,7 +43,7 @@ export class App {
             }
 
             // Store the provider classes
-            this.providers = providers;
+            this.providers = [...this.providers, ...providers];
 
             // Load and register all service providers
             await this.loadServiceProviders();
@@ -73,7 +74,7 @@ export class App {
         // Boot all providers
         for (const provider of instantiatedProviders) {
             if (provider.boot && typeof provider.boot === 'function') {
-                await provider.boot();
+                provider.boot();
             }
         }
     }

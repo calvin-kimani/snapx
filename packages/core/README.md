@@ -30,6 +30,40 @@ Or with npm:
 npm install @snapx/core
 ```
 
+## Configuration
+
+The `ConfigServiceProvider` loads configuration files from the `config` directory and makes them available via the container.
+
+1. Create a `config` directory in your project root.
+2. Add configuration files (e.g., `app.js`, `database.js`):
+
+```javascript
+// config/app.js
+export default {
+  name: 'Snapx App',
+  env: process.env.NODE_ENV || 'development',
+};
+
+// config/database.js
+export default {
+  connection: process.env.DB_CONNECTION || 'mysql',
+  host: process.env.DB_HOST || 'localhost',
+  port: process.env.DB_PORT || 3306,
+};
+```
+### Accessing Configuration
+
+```javascript
+import { App } from '@snapx/core';
+
+const app = new App();
+app.boot().then(() => {
+  const config = app.container.resolve('config');
+  console.log(config.app.name); // Output: Snapx App
+  console.log(config.database.host); // Output: localhost
+});
+```
+
 ## Usage
 
 Basic Example
