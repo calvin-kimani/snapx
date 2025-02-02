@@ -1,24 +1,27 @@
 {
   "name": "@snapx/core",
-  "version": "2.1.2",
-  "type": "module",
+  "version": "3.0.0",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "type": "module",
   "scripts": {
-    "build": "bun run tsc",
+    "build": "tsc",
+    "test": "bun test",
+    "prepublishOnly": "bun run build",
     "clean": "rm -rf dist"
   },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/calvin-kimani/snapx.git"
+  },
   "exports": {
-    ".": "./dist/index.js"
+    ".": "./dist/index.js",
+    "./package.json": "./package.json"
   },
   "files": [
     "dist",
     "README.md"
   ],
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/calvin-kimani/snapx.git"
-  },
   "keywords": [
     "dependency-injection",
     "container",
