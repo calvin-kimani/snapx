@@ -6,7 +6,7 @@ import path from 'path';
 export class ConfigServiceProvider extends ServiceProvider {
     private configPath: string;
 
-    constructor(container: Container, configPath: string = 'app/config') {
+    constructor(container: Container, configPath: string = 'config') {
         super(container);
         this.configPath = configPath;
     }
