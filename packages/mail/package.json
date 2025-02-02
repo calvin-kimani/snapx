@@ -1,23 +1,23 @@
 {
   "name": "@snapx/mail",
-  "module": "src/index.ts",
-  "type": "module",
   "main": "src/index.ts",
-  "types": "./dist/index.d.ts",
-  "scripts": {
-    "build": "bun run tsc",
-    "clean": "rm -rf dist"
-  },
-  "exports": {
-    ".": "./src/index.ts"
-  },
+  "module": "src/index.ts",
   "devDependencies": {
     "@types/bun": "latest"
   },
   "peerDependencies": {
     "typescript": "^5.0.0"
   },
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "build": "bun run tsc",
+    "clean": "rm -rf dist"
+  },
+  "type": "module",
+  "types": "./dist/index.d.ts",
   "dependencies": {
-    "@snapx/core": "^1.0.0"
+    "@snapx/core": "^2.1.2"
   }
 }
