@@ -13,7 +13,7 @@ export class ConfigServiceProvider extends ServiceProvider {
 
     register() {
         const config = this.loadConfig();
-        this.container.bind("config", config);
+        this.container.singleton("config", config);
     }
 
     /**
