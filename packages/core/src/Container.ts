@@ -1,19 +1,16 @@
+/**
+ * A simple dependency injection container for managing service bindings and resolutions.
+ */
 export class Container {
     /**
-     * Map to store service bindings.
-     * Keys are service identifiers, and values are either resolvers (factory functions or instances)
-     * or nested Maps for contextual bindings.
-     * @type {Map<string, Function | object | Map<string, Function | object>>}
+     * Bindings tell the container how to create an insance
      */
-    private bindings: Map<string, Function | object | any>;
+    private bindings: Map<string | { new (...args: any[]): unknown }, any>;
 
     /**
-     * Map to store resolved service instances.
-     * Keys are service identifiers (or composite keys for contextual bindings),
-     * and values are the resolved instances.
-     * @type {Map<string, any>}
+     * Holds cached services of the container
      */
-    private instances: Map<string, any>;
+    private instances: Map<string | { new (...args: any[]): unknown }, unknown>;
 
     constructor() {
         this.bindings = new Map();
@@ -21,35 +18,32 @@ export class Container {
     }
 
     /**
-     * Bind a singleton service to the container.
-     * Singleton services are instantiated once and reused throughout the application lifecycle.
-     * @param {string} key - The key to identify the service.
-     * @param {Function | object} resolver - A factory function or an instance to resolve the service.
+     * Registers a singleton binding in the container.
+     * @param key - The key to bind the service to.
+     * @param resolver - The resolver function or object instance.
      */
     singleton(key: string, resolver: Function | object): void {
-        this.bindings.set(key, { resolver });
+        this.bindings.set(key, { resolver, singleton: true });
     }
 
     /**
-     * Bind a transient service to the container.
-     * Transient services are instantiated each time they are resolved.
-     * @param {string} key - The key to identify the service.
-     * @param {Function | object} resolver - A factory function or an instance to resolve the service.
+     * Registers a transient binding in the container.
+     * @param key - The key to bind the service to.
+     * @param resolver - The resolver function or object instance.
      */
     transient(key: string, resolver: Function | object): void {
-        this.bindings.set(key, { resolver, transient: true });
+        this.bindings.set(key, { resolver, singleton: false });
     }
 
+
     /**
-     * Bind a contextual service to the container.
-     * Contextual services allow different implementations of the same service to be resolved
-     * based on a context key.
-     * @param {string} key - The key to identify the service.
-     * @param {string} contextKey - The key to identify the context.
-     * @param {Function | object} resolver - A factory function or an instance to resolve the service.
-     * @throws {Error} If the key is already bound as a non-contextual service.
+     * Registers a contextual binding in the container.
+     * @param key - The key to bind the service to.
+     * @param contextKey - The context-specific key.
+     * @param resolver - The resolver function or object instance.
+     * @param singleton - Whether the service should be a singleton within the context.
      */
-    context(key: string, contextKey: string, resolver: Function | object): void {
+    context(key: string, contextKey: string, resolver: Function | object, singleton = true): void {
         if (!this.bindings.has(key)) {
             this.bindings.set(key, new Map());
         }
@@ -57,65 +51,113 @@ export class Container {
         if (!(contextMap instanceof Map)) {
             throw new Error(`Cannot add contextual binding for key "${key}" because it is already bound as a non-contextual service.`);
         }
-        contextMap.set(contextKey, resolver);
+        contextMap.set(contextKey, { resolver, singleton });
     }
 
     /**
-     * Resolve a service from the container.
-     * @template T - The type of the resolved service.
-     * @param {string} key - The key to identify the service.
-     * @param {string} [contextKey] - The key to identify the context for contextual bindings.
-     * @returns {T} The resolved service instance.
-     * @throws {Error} If no binding is found for the key or context.
+     * Resolves a service from the container.
+     * @param key - The key or class constructor to resolve.
+     * @param contextKey - Optional context-specific key.
+     * @returns The resolved service instance.
+     * @throws Error if the binding is not found.
      */
-    resolve<T = any>(key: string, contextKey?: string): T {
-        const binding = this.bindings.get(key);
-        if (!binding) {
-            throw new Error(`No binding found for key: ${key}`);
-        }
-
-        // Handle contextual bindings
-        if (binding instanceof Map) {
-            if (!contextKey) {
-                throw new Error(`Context key must be provided for contextual binding for key: ${key}`);
+    resolve<T = unknown>(key: string | { new (...args: any[]): T }, contextKey?: string): T {
+        if (typeof key === "function") {
+            if (this.instances.has(key)) {
+                return this.instances.get(key) as T;
             }
-            const resolver = binding.get(contextKey);
-            if (!resolver) {
-                throw new Error(`No binding found for context: ${contextKey} under key: ${key}`);
-            }
-
-            // Use a composite key for caching contextual instances
-            const compositeKey = `${key}:${contextKey}`;
-            if (this.instances.has(compositeKey)) {
-                return this.instances.get(compositeKey);
-            }
-
-            // Create the instance using the resolver
-            const instance = typeof resolver === "function" ? resolver(this) : resolver;
-            this.instances.set(compositeKey, instance);
+            const instance = this.instantiate(key);
+            this.instances.set(key, instance);
             return instance;
         }
 
-        // Handle non-contextual bindings
+        const binding = this.bindings.get(key);
+        if (!binding) {
+            throw Error(`Binding not found for key: "${key}"`);
+        }
+
+        if (contextKey && binding instanceof Map) {
+            return this.resolveContext(key, contextKey, binding);
+        };
+
         if (this.instances.has(key)) {
-            return this.instances.get(key);
-        }
+            return this.instances.get(key) as T;
+        };
 
-        // Handle transient bindings
-        if (binding.transient) {
-            return typeof binding.resolver === "function" ? binding.resolver(this) : binding.resolver;
+        const instance = typeof binding.resolver === 'function' ? binding.resolver() : binding.resolver;
+        if (binding.singleton) {
+            this.instances.set(key, instance);
         }
-
-        // Handle singleton bindings
-        const instance = typeof binding.resolver === "function" ? binding.resolver(this) : binding.resolver;
-        this.instances.set(key, instance);
         return instance;
     }
 
     /**
-     * Check if a service is bound to the container.
-     * @param {string} key - The key to identify the service.
-     * @returns {boolean} Whether the service is bound.
+     * Instantiates a class and injects its dependencies.
+     * @param target - The class constructor to instantiate.
+     * @returns The instantiated class with dependencies resolved.
+     * @throws Error if a dependency is unresolvable.
+     */
+    private instantiate<T>(target: { new (...args: any[]): T }): T {
+        const dependencies = (target as any).__dependencies || [];
+
+        const resolvedDeps = dependencies.map((dep: any, index: number) => {
+            if (this.isPrimitive(dep)) {
+                throw Error(`Unresolvable dependency resolving [Parameter #${index} [ type ${dep.name} ]] in class ${target.name}`);
+            }
+
+            // Check for an existing instance that matches the prototype
+            for (const instance of this.instances.values()) {
+                if (instance instanceof dep) {
+                    return instance;
+                }
+            }
+
+            return this.resolve(dep);
+        });
+
+        return new target(...resolvedDeps);
+    }
+
+     /**
+     * Resolves a contextual binding from the container.
+     * @param key - The key of the service.
+     * @param contextKey - The context-specific key.
+     * @param binding - The binding map containing context-specific services.
+     * @returns The resolved contextual instance.
+     * @throws Error if the contextual binding is not found.
+     */
+    private resolveContext<T>(key: string, contextKey: string, binding: Map<string, any>): T {
+        const compositeKey = `${key}:${contextKey}`;
+
+        if (this.instances.has(compositeKey)) {
+            return this.instances.get(compositeKey) as T;
+        }
+
+        const context = binding.get(contextKey);
+        if (!context) {
+            throw Error(`Binding not found for key: "${key}" with context "${contextKey}"`);
+        }
+
+        const instance = typeof context.resolver === 'function' ? context.resolver() : context.resolver;
+        if (context.singleton) {
+            this.instances.set(compositeKey, instance);
+        }
+        return instance;
+    }
+
+   /**
+     * Checks if a value is a primitive type.
+     * @param object - The value to check.
+     * @returns True if the value is a primitive type, false otherwise.
+     */
+    private isPrimitive(object: unknown): boolean {
+        return [String, Number, Boolean, Symbol, BigInt, undefined].includes(object as any);
+    }
+
+    /**
+     * Checks if a key exists in the container.
+     * @param key - The key to check.
+     * @returns True if the key exists, false otherwise.
      */
     has(key: string): boolean {
         return this.bindings.has(key);
