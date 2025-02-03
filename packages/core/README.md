@@ -8,9 +8,23 @@ A lightweight dependency injection container and service provider architecture i
 
 ---
 
+## Table of Contents
+- [Features](#features)
+- [Installation](#installation)
+- [Automatic Dependency Resolution](#automatic-dependency-resolution)
+- [Configuration](#configuration)
+- [Usage](#usage)
+- [Service Bindings](#service-bindings)
+- [Dynamic Provider Loading](#dynamic-provider-loading)
+- [Container and App Classes](#container-and-app-classes)
+- [API Reference](#api-reference)
+- [License](#license)
+- [Acknowledgments](#acknowledgments)
+
 ## Features
 
 - **Dependency Injection**: Manage and resolve dependencies with ease.
+- **Automatic Dependency Resolution** : Automatically resolve constructor dependencies using the @Injectable decorator.
 - **Service Providers**: Register and boot services in a modular way.
 - **TypeScript Support**: Fully typed for a better developer experience.
 - **Flexible Configuration**: Load providers dynamically from a configuration file.
@@ -33,6 +47,51 @@ npm install @snapx/core
 ```
 
 ---
+
+
+## Automatic Dependency Resolution
+
+The container now supports automatic dependency resolution using the `@Injectable` decorator. When a class is decorated with `@Injectable`, its constructor dependencies are automatically extracted and resolved by the container.
+
+#### How It Works
+
+1. Decorate your classes with `@Injectable`:
+
+```ts
+import { Injectable } from '@snapx/core';
+
+@Injectable()
+class ServiceA {
+    sayHello() {
+        return "Hello from ServiceA!";
+    }
+}
+
+@Injectable()
+class ServiceB {
+    constructor(private serviceA: ServiceA) {}
+    greet() {
+        return this.serviceA.sayHello();
+    }
+}
+```
+
+2. Register the services in the container:
+
+```ts
+container.singleton('ServiceA', () => new ServiceA());
+container.singleton('ServiceB', () => container.resolve(ServiceB));
+```
+
+3. Resolve the service:
+
+```ts
+const serviceB = container.resolve<ServiceB>('ServiceB');
+console.log(serviceB.greet()); // Output: Hello from ServiceA!
+```
+
+This eliminates the need for manual dependency configuration, making the container easier to use and reducing boilerplate.
+
 
 ## Configuration
 
@@ -76,21 +135,37 @@ console.log(config.database.host); // Output: localhost
 Basic Example:
 
 ```ts
-import { App, Container, ServiceProvider } from '@snapx/core';
+import { App, Container, ServiceProvider, Injectable } from '@snapx/core';
+
+// Define injectable services
+@Injectable()
+class MyService {
+  sayHello() {
+    return "Hello from MyService!";
+  }
+}
+
+@Injectable()
+class AnotherService {
+  constructor(private myService: MyService) {}
+  greet() {
+    return this.myService.sayHello();
+  }
+}
 
 // Create a custom service provider
 class MyServiceProvider extends ServiceProvider {
   register() {
     this.container.singleton('myService', () => new MyService());
+    this.container.singleton('anotherService', () => this.container.resolve(AnotherService));
   }
 }
 
 // Bootstrap the application
 const app = new App();
-app.boot().then(() => {
-  const myService = app.container.resolve('myService');
-  myService.doSomething();
-});
+await app.boot();
+const anotherService = app.container.resolve<AnotherService>('anotherService');
+console.log(anotherService.greet()); // Output: Hello from MyService!
 ```
 
 ---
